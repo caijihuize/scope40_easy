@@ -1,0 +1,13 @@
+# Downloaded Foldseek binary & tarball
+/foldseek/
+/foldseek-linux-avx2.tar.gz
+
+# Python
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+
+# Data
+data/
+work/
+log/
