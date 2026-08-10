@@ -1,13 +1,19 @@
-# Downloaded Foldseek binary & tarball
-/foldseek/
-/foldseek-linux-avx2.tar.gz
+# Local artifacts (not in Git)
+/tmp/
+/bin/
+/output/
+*.tar.gz
+
+# work/: large DBs / FASTA / metrics — keep only README stubs
+/work/*
+!/work/aa2di_fasta/
+!/work/di2aa_fasta/
+/work/aa2di_fasta/*
+!/work/aa2di_fasta/README.md
+/work/di2aa_fasta/*
+!/work/di2aa_fasta/README.md
 
 # Python
 __pycache__/
 *.py[cod]
 .ipynb_checkpoints/
-
-# Data
-data/
-work/
-log/

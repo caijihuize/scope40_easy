@@ -1,0 +1,5 @@
+# Python deps for scope40_easy notebooks (Foldseek / MMseqs are binary downloads).
+biopython>=1.81
+pandas>=2.0
+numpy>=1.24
+matplotlib>=3.7

@@ -1,0 +1,11 @@
+name: ESM3_3Di_5090
+channels:
+  - conda-forge
+dependencies:
+  - python>=3.10
+  - biopython>=1.81
+  - pandas>=2.0
+  - numpy>=1.24
+  - matplotlib>=3.7
+  - jupyterlab
+  - wget
