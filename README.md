@@ -1,6 +1,6 @@
 # scope40_easy
 
-在 **SCOPe40**（SCOPe 2.08，序列同一性 ≤ 40%）上，用 **easy-search** 评估远程同源检测表现：
+在 **SCOPe40**（SCOPe 2.08，序列同一性 ≤ 40%）上评估远程同源检测：
 
 - 结构真值：Foldseek (AA+3Di)、MMseqs2
 - 预测 3Di：ESM3-3Di、ESM3-LoRA、ProstT5、SaProt
@@ -31,7 +31,7 @@ scope40_easy/
 ├── requirements.txt
 ├── 0.prepare.ipynb           # 下载 / 建 GT 库 / 写标签
 ├── 1.init.ipynb              # 检查预测 FASTA、建预测库
-├── 2.a.benchmark.ipynb       # easy-search + 评估（写出 metrics）
+├── 2.a.benchmark.ipynb       # Foldseek easy-search / MMseqs search + 评估
 ├── 2.b.translation_eval.ipynb # AA↔3Di 预测 vs GT 准确度
 ├── 3.plot.ipynb              # AUROC1 + translation 图
 ├── bin/                      # foldseek, mmseqs（gitignore）
@@ -42,7 +42,7 @@ scope40_easy/
     ├── DB/                   # foldseek_DB / mmseqs_DB / 各预测库
     ├── aa2di_fasta/          # 【用户】AA→3Di（见该目录 README）
     ├── di2aa_fasta/          # 【用户】3Di→AA（见该目录 README）
-    ├── aln/                  # easy-search 结果
+    ├── aln/                  # 全库自比对 TSV
     ├── metrics/              # 灵敏度表、auc_easy.csv；translation/ 序列表
     └── figures/              # AUROC1 图；translation_accuracy.png
 ```
@@ -78,6 +78,8 @@ scope40_easy/
 | 输出 | `work/aln/{method}_easy.tsv` |
 | | `work/metrics/{method}_easy_{fam,sup,fol}.tsv` |
 | | `work/metrics/auc_easy.csv`（汇总；`3.plot` 会按曲线重算并刷新） |
+| 搜索 | Foldseek / 预测方法：`foldseek easy-search`（可直接吃库） |
+| | MMseqs2：对已有 `mmseqs_DB` 跑 `mmseqs search` + `convertalis`（`easy-search` 只接受 FASTA，不能传 DB） |
 
 ### `2.b.translation_eval.ipynb`
 
@@ -125,7 +127,7 @@ scope40_easy/
 | ProstT5 (translate) | Foldseek | `work/aa2di_fasta/DB_ProstT5_translate_aa2di.fasta` → 建库 |
 | SaProt | Foldseek | `work/aa2di_fasta/DB_SaProt_aa2di.fasta` → 建库 |
 
-参数（对齐 `new_scope40` easy）：`-s 9.5 --max-seqs 2000 -e 10`，query = target。
+参数（对齐 `new_scope40` easy）：`-s 9.5 --max-seqs 2000 -e 10`，query = target，默认 64 线程。2.a 请在计算节点跑。
 
 ### 评估协议（scope_family）
 
@@ -151,11 +153,13 @@ cp /path/to/DB_ESM3_di2aa.fasta work/di2aa_fasta/
 # … 其余方法见 work/di2aa_fasta/README.md
 
 # 3) 1.init → 2.a.benchmark → 2.b.translation_eval（后者可选，顺序可互换）
-# 4) 3.plot.ipynb 统一作图
-jupyter lab
+# 4) 3.plot.ipynb 统一作图（需 matplotlib；或用下面命令出图）
+jupyter lab --no-browser --ip=0.0.0.0
 ```
 
-Kernel 名：`ESM3_3Di_5090`。已有产物默认跳过；强制重跑设 `SKIP_EXISTING = False`。
+**Kernel 必须是 `ESM3_3Di_5090` 的 Python**（`~/.conda/envs/ESM3_3Di_5090/bin/python`，3.10）。第一格打印 `sys.executable` 确认。集群自带的 `miniforge3/.../python3.12` 没有 biopython / matplotlib，不要在那上面 pip。
+
+已有产物默认跳过；强制重跑设 `SKIP_EXISTING = False`。图写入 `work/figures/`。
 
 ## 依赖
 
@@ -166,16 +170,31 @@ Kernel 名：`ESM3_3Di_5090`。已有产物默认跳过；强制重跑设 `SKIP_
 | Foldseek / MMseqs2 | `0.prepare` 安装到 `bin/`（Linux AVX2） |
 | 模型预测 | 用户复制到 `work/aa2di_fasta/`、`work/di2aa_fasta/` |
 
-## 参考结果（easy，来自 new_scope40；MMseqs2 为本项目新增）
+## 结果（本仓库 easy，SCOPe40 13,920 domains）
+
+来源：`work/metrics/auc_easy.csv`（2026-08-18）。图：[`work/figures/auroc1_easy.png`](work/figures/auroc1_easy.png)。AUC = 各 query 灵敏度均值。
 
 | Method | Family | Superfamily | Fold |
 |--------|--------|-------------|------|
-| Foldseek (AA+3Di) | 0.735 | 0.631 | 0.081 |
-| MMseqs2 | — | — | — |
+| Foldseek (AA+3Di) | 0.735 | 0.631 | 0.080 |
 | ProstT5 (translate) | 0.708 | 0.589 | 0.055 |
-| ESM3-LoRA | 0.698 | 0.582 | 0.051 |
-| ESM3-3Di | 0.698 | 0.582 | 0.055 |
-| SaProt | 0.458 | 0.343 | 0.024 |
+| ESM3-LoRA | 0.699 | 0.582 | 0.051 |
+| ESM3-3Di | 0.695 | 0.582 | 0.054 |
+| MMseqs2 | 0.626 | 0.528 | 0.012 |
+| SaProt | 0.458 | 0.344 | 0.024 |
+
+与 `new_scope40` easy 参考值一致；MMseqs2 为本仓库实测。
+
+### Translation accuracy（预测 vs GT）
+
+来源：`work/metrics/translation/translation_summary.csv`。图：[`work/figures/translation_accuracy.png`](work/figures/translation_accuracy.png)。micro accuracy；长度不一致已跳过（ESM3 aa2di 13 条，ProstT5 双向各 3 条）。
+
+| Method | AA→3Di | 3Di→AA |
+|--------|--------|--------|
+| ProstT5 (translate) | 0.670 | 0.372 |
+| ESM3-LoRA | 0.656 | 0.393 |
+| ESM3-3Di | 0.604 | 0.234 |
+| SaProt | 0.409 | 0.413 |
 
 ## 相关
 
