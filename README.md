@@ -79,7 +79,7 @@ scope40_easy/
 | | `work/metrics/{method}_easy_{fam,sup,fol}.tsv` |
 | | `work/metrics/auc_easy.csv`（汇总；`3.plot` 会按曲线重算并刷新） |
 | 搜索 | Foldseek / 预测方法：`foldseek easy-search`（可直接吃库） |
-| | MMseqs2：对已有 `mmseqs_DB` 跑 `mmseqs search` + `convertalis`（`easy-search` 只接受 FASTA，不能传 DB） |
+| | MMseqs2：`mmseqs search` + `convertalis`（`easy-search` 只接受 FASTA，不能传 DB） |
 
 ### `2.b.translation_eval.ipynb`
 
@@ -127,13 +127,22 @@ scope40_easy/
 | ProstT5 (translate) | Foldseek | `work/aa2di_fasta/DB_ProstT5_translate_aa2di.fasta` → 建库 |
 | SaProt | Foldseek | `work/aa2di_fasta/DB_SaProt_aa2di.fasta` → 建库 |
 
-参数（对齐 `new_scope40` easy）：`-s 9.5 --max-seqs 2000 -e 10`，query = target，默认 64 线程。2.a 请在计算节点跑。
+参数（query = target，默认 64 线程）。2.a 请在计算节点跑。
 
-### 评估协议（scope_family）
+| 方法 | 搜索 | 灵敏度协议 |
+|------|------|------------|
+| Foldseek / 预测 3Di | `easy-search -s 9.5 --max-seqs 2000 -e 10`（对齐 `new_scope40` easy） | **hitlist**：分母 = 比对 TSV 里出现的同类 hit |
+| MMseqs2 | `search -a -s 7.5 --max-seqs 2000 -e 10000`（对齐 `foldseek-analysis` `runMMseqs.sh`） | **catalog**：`bench.noselfhit.awk`，分母 = 库内该层级全部同源 |
 
-1. 跳过 self-hit  
-2. 第一个 **wrong fold** 视为 FP，其后不再计 TP  
-3. Family / Superfamily / Fold 灵敏度；AUC = 各 query 灵敏度均值  
+### 评估协议
+
+两边都：跳过 self-hit；第一个 **wrong fold** 视为 FP，其后不再计 TP；Family / Superfamily / Fold 互斥计数；AUC = 各 query 灵敏度均值。
+
+MMseqs2 额外对齐 foldseek-analysis：
+
+1. 分母是库内全部同源（漏检算 FN），不是 TSV 内 hit 数  
+2. 只平均同时具有 family、远程 superfamily、远程 fold 成员的 query  
+3. 零命中的有效 query 记灵敏度为 0  
 
 ## 快速开始
 
@@ -159,7 +168,8 @@ jupyter lab --no-browser --ip=0.0.0.0
 
 **Kernel 必须是 `ESM3_3Di_5090` 的 Python**（`~/.conda/envs/ESM3_3Di_5090/bin/python`，3.10）。第一格打印 `sys.executable` 确认。集群自带的 `miniforge3/.../python3.12` 没有 biopython / matplotlib，不要在那上面 pip。
 
-已有产物默认跳过；强制重跑设 `SKIP_EXISTING = False`。图写入 `work/figures/`。
+已有 Foldseek / 预测方法产物默认跳过；强制重跑设 `SKIP_EXISTING = False`。  
+MMseqs2 在改用 foldseek-analysis 参数后，`2.a` 里 `MMSEQS_SKIP_EXISTING = False`（会重搜）；跑完一次后可改回 `True`。图写入 `work/figures/`。
 
 ## 依赖
 
@@ -180,10 +190,11 @@ jupyter lab --no-browser --ip=0.0.0.0
 | ProstT5 (translate) | 0.708 | 0.589 | 0.055 |
 | ESM3-LoRA | 0.699 | 0.582 | 0.051 |
 | ESM3-3Di | 0.695 | 0.582 | 0.054 |
-| MMseqs2 | 0.626 | 0.528 | 0.012 |
+| MMseqs2 | （待重跑） | （待重跑） | （待重跑） |
 | SaProt | 0.458 | 0.344 | 0.024 |
 
-与 `new_scope40` easy 参考值一致；MMseqs2 为本仓库实测。
+Foldseek / 预测 3Di 与 `new_scope40` easy 参考值一致。  
+MMseqs2 已改为 foldseek-analysis 的搜索参数与 catalog 灵敏度协议，需重跑 `2.a.benchmark.ipynb` 后更新本表。
 
 ### Translation accuracy（预测 vs GT）
 

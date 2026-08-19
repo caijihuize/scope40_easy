@@ -105,11 +105,22 @@ PALETTE = {
     "SaProt": "#e7298a",
 }
 
+# Foldseek / 预测 3Di：对齐 new_scope40 easy
 EASY_SEARCH_PARAMS = {
     "sensitivity": 9.5,
     "max_seqs": 2000,
     "evalue": 10.0,
     "threads": 64,
+}
+
+# MMseqs2：对齐 foldseek-analysis/scopbenchmark/scripts/runMMseqs.sh
+#   mmseqs search ... -a --threads 64 -s 7.5 -e 10000 --max-seqs 2000
+MMSEQS_SEARCH_PARAMS = {
+    "sensitivity": 7.5,
+    "max_seqs": 2000,
+    "evalue": 10000,
+    "threads": 64,
+    "add_backtrace": True,  # -a
 }
 
 CONDA_ENV = "ESM3_3Di_5090"
@@ -164,6 +175,15 @@ def method_by_key(method_key: str) -> tuple[str, str, str, str | None]:
 
 def method_engine(method_key: str) -> str:
     return method_by_key(method_key)[2]
+
+
+def method_eval_protocol(method_key: str) -> str:
+    """Sensitivity protocol.
+
+    - hitlist: new_scope40 / scope_family TSV-内分母（Foldseek 与预测 3Di）
+    - catalog: foldseek-analysis bench.noselfhit.awk，分母为库内全部同源（MMseqs2）
+    """
+    return "catalog" if method_engine(method_key) == "mmseqs" else "hitlist"
 
 
 def predicted_fasta_names() -> list[str]:
